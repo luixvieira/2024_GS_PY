@@ -1,0 +1,42 @@
+{
+    "Usuario": {
+        "ID": 2,
+        "Nome": "Luis",
+        "Email": "henrique2.terceiro@gmail.com",
+        "Data de Criação": "2024-11-11"
+    },
+    "Residencias": [
+        {
+            "ID Residencia": 1,
+            "Numero de Moradores": 1,
+            "Metragem": 100.0,
+            "Regiao Tarifa": "ZS",
+            "Preco kWh": 100.0
+        }
+    ],
+    "Veiculos": [
+        {
+            "ID Veiculo": 2,
+            "Tipo Veiculo": "Carro",
+            "KM Mensal": 1000.0,
+            "Emissao CO2 por KM": 100.0
+        },
+        {
+            "ID Veiculo": 3,
+            "Tipo Veiculo": "Carro",
+            "KM Mensal": 100.0,
+            "Emissao CO2 por KM": 100.0
+        }
+    ],
+    "Eletrodomesticos": [
+        {
+            "ID Residencia": 1,
+            "ID Eletrodomestico": 2,
+            "Nome Eletrodomestico": "Aspirador",
+            "Potencia": 100.0,
+            "Emissao CO2 por Hora": 100.0,
+            "Marca": "Philips",
+            "Horas de Uso Diario": 10.0
+        }
+    ]
+}
