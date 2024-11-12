@@ -240,13 +240,77 @@ def atualizar_usuario():
 def excluir_usuario():
     try:
         connection = conectar()
-        cursor = connection.cursor()
-        
-        usuario_id = int(input("Digite o ID do usuário a ser excluído: "))
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
 
-        cursor.execute("DELETE FROM TB_EL_USUARIO WHERE id_usuario = :1", (usuario_id,))
+        cursor = connection.cursor()
+
+        # Opções para escolher o critério de exclusão
+        print("\nEscolha uma opção para encontrar o usuário que deseja excluir:")
+        print("1. Excluir por ID")
+        print("2. Excluir por Nome")
+        print("3. Excluir por Email")
+        opcao = input("Escolha uma opção (1-3): ").strip()
+
+        # Variáveis para consulta SQL e parâmetros
+        consulta = ""
+        parametros = {}
+
+        # Escolha da opção de busca para exclusão
+        if opcao == "1":
+            # Exclusão por ID
+            while True:
+                try:
+                    usuario_id = int(input("Digite o ID do usuário: ").strip())
+                    consulta = "SELECT * FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario"
+                    parametros = {'id_usuario': usuario_id}
+                    cursor.execute(consulta, parametros)
+                    break
+                except ValueError:
+                    print("Erro: O ID deve ser um número. Tente novamente.")
+
+        elif opcao == "2":
+            # Exclusão por Nome
+            nome = input("Digite o nome do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE nome LIKE :nome"
+            parametros = {'nome': f'%{nome}%'}
+            cursor.execute(consulta, parametros)
+
+        elif opcao == "3":
+            # Exclusão por Email
+            email = input("Digite o email do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE email = :email"
+            parametros = {'email': email}
+            cursor.execute(consulta, parametros)
+
+        else:
+            print("Opção inválida. Tente novamente.")
+            return
+
+        # Verifica se o usuário foi encontrado
+        usuario = cursor.fetchone()
+        if not usuario:
+            print("Nenhum usuário encontrado com os critérios fornecidos.")
+            return
+
+        print(f"\nUsuário encontrado: {usuario}")
+        confirmacao = input("Tem certeza de que deseja excluir este usuário? (s/n): ").strip().lower()
+        if confirmacao != 's':
+            print("Exclusão cancelada pelo usuário.")
+            return
+
+        # Executa a exclusão com base na opção escolhida
+        if opcao == "1":
+            cursor.execute("DELETE FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario", {'id_usuario': usuario_id})
+        elif opcao == "2":
+            cursor.execute("DELETE FROM TB_EL_USUARIO WHERE nome LIKE :nome", {'nome': f'%{nome}%'})
+        elif opcao == "3":
+            cursor.execute("DELETE FROM TB_EL_USUARIO WHERE email = :email", {'email': email})
+        
         connection.commit()
         print("Usuário excluído com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao excluir usuário:", e)
     finally:
@@ -254,6 +318,7 @@ def excluir_usuario():
             cursor.close()
         if connection:
             connection.close()
+
 
 # Função para gerar o relatório de um usuário específico
 def gerar_relatorio_usuario():
