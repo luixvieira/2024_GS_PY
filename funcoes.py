@@ -1413,21 +1413,37 @@ def excluir_residencia():
 
         cursor = connection.cursor()
         
-        # Solicita o ID da residência a ser excluída
-        id_residencia = int(input("Digite o ID da residência a ser excluída: "))
+        # Solicita e valida o ID da residência a ser excluída
+        while True:
+            try:
+                id_residencia = int(input("Digite o ID da residência a ser excluída: ").strip())
+                if id_residencia > 0:
+                    # Verifica se a residência existe no banco de dados
+                    cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Residência não encontrada. Por favor, insira um ID de residência válido.")
+                else:
+                    print("Erro: O ID da residência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID da residência deve ser um número.")
 
-        # Verifica se a residência existe
-        cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
-        if not cursor.fetchone():
-            print("Residência não encontrada.")
+        # Confirmação para exclusão
+        confirmacao = input(f"Tem certeza de que deseja excluir a residência com ID {id_residencia}? (s/n): ").strip().lower()
+        if confirmacao != 's':
+            print("Operação de exclusão cancelada.")
             return
 
         # Exclui a residência
         cursor.execute("DELETE FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
         connection.commit()
         print("Residência excluída com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao excluir residência:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
