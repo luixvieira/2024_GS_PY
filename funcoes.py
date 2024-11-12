@@ -1163,38 +1163,78 @@ def inserir_residencia():
 
         cursor = connection.cursor()
 
-        # Solicita o ID do usuário e verifica se existe
-        id_usuario = int(input("Digite o ID do usuário proprietário da residência: "))
-        cursor.execute("SELECT id_usuario FROM TB_EL_USUARIO WHERE id_usuario = :1", (id_usuario,))
-        if not cursor.fetchone():
-            print("Usuário não encontrado. Por favor, insira um ID de usuário válido.")
-            return
+        # Solicita e valida o ID do usuário
+        while True:
+            try:
+                id_usuario = int(input("Digite o ID do usuário proprietário da residência: ").strip())
+                if id_usuario > 0:
+                    # Verifica se o usuário existe no banco de dados
+                    cursor.execute("SELECT id_usuario FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario", {'id_usuario': id_usuario})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Usuário não encontrado. Por favor, insira um ID de usuário válido.")
+                else:
+                    print("Erro: O ID do usuário deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID do usuário deve ser um número.")
 
-        # Solicita o ID da tarifa de energia e verifica se existe
-        id_tarifa = int(input("Digite o ID da tarifa de energia associada à residência: "))
-        cursor.execute("SELECT id_tarifa FROM TB_EL_TARIFA_ENERGIA WHERE id_tarifa = :1", (id_tarifa,))
-        if not cursor.fetchone():
-            print("Tarifa de energia não encontrada. Por favor, insira um ID de tarifa válido.")
-            return
+        # Solicita e valida o ID da tarifa de energia
+        while True:
+            try:
+                id_tarifa = int(input("Digite o ID da tarifa de energia associada à residência: ").strip())
+                if id_tarifa > 0:
+                    # Verifica se a tarifa de energia existe no banco de dados
+                    cursor.execute("SELECT id_tarifa FROM TB_EL_TARIFA_ENERGIA WHERE id_tarifa = :id_tarifa", {'id_tarifa': id_tarifa})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Tarifa de energia não encontrada. Por favor, insira um ID de tarifa válido.")
+                else:
+                    print("Erro: O ID da tarifa deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID da tarifa deve ser um número.")
 
-        # Solicita os demais dados da residência
-        numero_moradores = int(input("Digite o número de moradores na residência: "))
-        metragem = float(input("Digite a metragem da residência em metros quadrados: "))
+        # Solicita e valida o número de moradores
+        while True:
+            try:
+                numero_moradores = int(input("Digite o número de moradores na residência: ").strip())
+                if numero_moradores > 0:
+                    break
+                else:
+                    print("Erro: O número de moradores deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O número de moradores deve ser um número inteiro.")
+
+        # Solicita e valida a metragem da residência
+        while True:
+            try:
+                metragem = float(input("Digite a metragem da residência em metros quadrados: ").strip())
+                if metragem > 0:
+                    break
+                else:
+                    print("Erro: A metragem deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A metragem deve ser um número.")
 
         # Insere os dados na tabela TB_EL_RESIDENCIA
         cursor.execute("""
             INSERT INTO TB_EL_RESIDENCIA (id_usuario, id_tarifa, numero_moradores, metragem)
-            VALUES (:1, :2, :3, :4)
-        """, (id_usuario, id_tarifa, numero_moradores, metragem))
+            VALUES (:id_usuario, :id_tarifa, :numero_moradores, :metragem)
+        """, {'id_usuario': id_usuario, 'id_tarifa': id_tarifa, 'numero_moradores': numero_moradores, 'metragem': metragem})
         connection.commit()
         print("Residência inserida com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao inserir residência:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def consultar_residencia():
     try:
