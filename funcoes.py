@@ -1090,35 +1090,67 @@ def associar_eletrodomestico_residencia():
 
         cursor = connection.cursor()
 
-        id_residencia = int(input("Digite o ID da residência: "))
-        id_eletro = int(input("Digite o ID do eletrodoméstico: "))
-        horas_uso_diario = float(input("Digite as horas de uso diário: "))
+        # Solicita e valida o ID da residência
+        while True:
+            try:
+                id_residencia = int(input("Digite o ID da residência: ").strip())
+                if id_residencia > 0:
+                    # Verifica se a residência existe no banco de dados
+                    cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Residência não encontrada. Por favor, insira um ID de residência válido.")
+                else:
+                    print("Erro: O ID da residência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID da residência deve ser um número.")
 
-        # Verificar se a residência e o eletrodoméstico existem
-        cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :1", (id_residencia,))
-        if not cursor.fetchone():
-            print("Residência não encontrada.")
-            return
+        # Solicita e valida o ID do eletrodoméstico
+        while True:
+            try:
+                id_eletro = int(input("Digite o ID do eletrodoméstico: ").strip())
+                if id_eletro > 0:
+                    # Verifica se o eletrodoméstico existe no banco de dados
+                    cursor.execute("SELECT id_eletro FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Eletrodoméstico não encontrado. Por favor, insira um ID de eletrodoméstico válido.")
+                else:
+                    print("Erro: O ID do eletrodoméstico deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID do eletrodoméstico deve ser um número.")
 
-        cursor.execute("SELECT ID_ELETRO FROM TB_EL_ELETRODOMESTICO WHERE ID_ELETRO = :1", (id_eletro,))
-        if not cursor.fetchone():
-            print("Eletrodoméstico não encontrado.")
-            return
+        # Validação das horas de uso diário
+        while True:
+            try:
+                horas_uso_diario = float(input("Digite as horas de uso diário: ").strip())
+                if horas_uso_diario >= 0:
+                    break
+                else:
+                    print("Erro: As horas de uso diário devem ser um número não negativo.")
+            except ValueError:
+                print("Erro: Entrada inválida. As horas de uso devem ser um número.")
 
         # Inserir na tabela de uso de eletrodomésticos
         cursor.execute("""
-            INSERT INTO TB_EL_USO_ELETRODOMESTICO (id_residencia, ID_ELETRO, horas_uso_diario)
-            VALUES (:1, :2, :3)
-        """, (id_residencia, id_eletro, horas_uso_diario))
+            INSERT INTO TB_EL_USO_ELETRODOMESTICO (id_residencia, id_eletro, horas_uso_diario)
+            VALUES (:id_residencia, :id_eletro, :horas_uso_diario)
+        """, {'id_residencia': id_residencia, 'id_eletro': id_eletro, 'horas_uso_diario': horas_uso_diario})
         connection.commit()
         print("Eletrodoméstico associado à residência com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao associar eletrodoméstico à residência:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def inserir_residencia():
     connection = None
