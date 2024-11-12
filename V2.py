@@ -509,15 +509,14 @@ def menu():
         print("2. Consultar Usuários")
         print("3. Atualizar Usuário")
         print("4. Excluir Usuário")
-        print("5. Gerar Relatório de Usuários")
-        print("6. Inserir Novo Tipo de Eletrodoméstico")
-        print("7. Associar Eletrodoméstico a Residência")
-        print("8. Inserir Veículo")
-        print("9. Inserir Registro de Consumo de Gás")
-        print("10. Gerar Relatório de Usuários")
-        print("11. Inserir Residência")
-        print("12. Inserir Tarifa de energia")
-        print("13. Sair")
+        print("5. Inserir Novo Tipo de Eletrodoméstico")
+        print("6. Associar Eletrodoméstico a Residência")
+        print("7. Inserir Veículo")
+        print("8. Inserir Registro de Consumo de Gás")
+        print("9. Gerar Relatório de Usuários")
+        print("10. Inserir Residência")
+        print("11. Inserir Tarifa de energia")
+        print("12. Sair")
 
         opcao = input("Escolha uma opção: ")
 
@@ -530,22 +529,20 @@ def menu():
         elif opcao == "4":
             excluir_usuario()
         elif opcao == "5":
-            gerar_relatorio()
-        elif opcao == "6":
             inserir_tipo_eletrodomestico()
-        elif opcao == "7":
+        elif opcao == "6":
             associar_eletrodomestico_residencia()
-        elif opcao == "8":
+        elif opcao == "7":
             inserir_veiculo()
-        elif opcao == "9":
+        elif opcao == "8":
             inserir_gas()
-        elif opcao == "10":
+        elif opcao == "9":
             gerar_relatorio_usuario()
-        elif opcao == "11":
+        elif opcao == "10":
             inserir_residencia()
-        elif opcao == "12":
+        elif opcao == "11":
             inserir_tarifa_energia()
-        elif opcao == "13":
+        elif opcao == "12":
             print("Saindo do sistema.")
             break
         else:
