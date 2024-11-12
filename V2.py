@@ -3,10 +3,14 @@ import json
 import pandas as pd
 from datetime import datetime
 
-# Configuração da URL de conexão
-username = "RM558935"
-password = "310805"
-dsn = "oracle.fiap.com.br/ORCL"
+with open(r'credenciais_banco\credenciais_banco.json', 'r') as credenciais_banco:
+    credenciais = json.load(credenciais_banco)
+    
+    username = credenciais['username']
+    password = credenciais['password']
+    dsn = credenciais['dsn']
+    
+
 
 # Conexão com o banco de dados
 def conectar():
