@@ -1013,24 +1013,71 @@ def inserir_gas():
 
         cursor = connection.cursor()
 
-        id_residencia = int(input("Digite o ID da residência: "))
-        tipo_gas = input("Digite o tipo de gás (Botijão, Encanado): ")
-        quantidade_mensal = float(input("Digite a quantidade mensal consumida (em litros ou kg): "))
-        emissao_co2_por_unidade = float(input("Digite a emissão de CO2 por unidade de gás consumida: "))
+        # Solicita e valida o ID da residência
+        while True:
+            try:
+                id_residencia = int(input("Digite o ID da residência: ").strip())
+                if id_residencia > 0:
+                    # Verifica se a residência existe no banco de dados
+                    cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Residência não encontrada. Por favor, insira um ID de residência válido.")
+                else:
+                    print("Erro: O ID da residência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID deve ser um número.")
 
+        # Validação do tipo de gás
+        tipos_gas_validos = ["Botijão", "Encanado"]
+        while True:
+            tipo_gas = input("Digite o tipo de gás (Botijão, Encanado): ").strip()
+            if tipo_gas in tipos_gas_validos:
+                break
+            else:
+                print(f"Erro: Tipo de gás inválido. Escolha entre: {', '.join(tipos_gas_validos)}")
+
+        # Validação da quantidade mensal consumida
+        while True:
+            try:
+                quantidade_mensal = float(input("Digite a quantidade mensal consumida (em litros ou kg): ").strip())
+                if quantidade_mensal > 0:
+                    break
+                else:
+                    print("Erro: A quantidade mensal deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A quantidade deve ser um número.")
+
+        # Validação da emissão de CO2 por unidade de gás consumida
+        while True:
+            try:
+                emissao_co2_por_unidade = float(input("Digite a emissão de CO2 por unidade de gás consumida: ").strip())
+                if emissao_co2_por_unidade >= 0:
+                    break
+                else:
+                    print("Erro: A emissão de CO2 deve ser um número não negativo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A emissão de CO2 deve ser um número.")
+
+        # Inserção do registro de consumo de gás no banco de dados
         cursor.execute("""
             INSERT INTO TB_EL_GAS (id_residencia, tipo_gas, quantidade_mensal, emissao_co2_por_unidade)
             VALUES (:1, :2, :3, :4)
         """, (id_residencia, tipo_gas, quantidade_mensal, emissao_co2_por_unidade))
         connection.commit()
         print("Registro de consumo de gás inserido com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao inserir registro de gás:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def associar_eletrodomestico_residencia():
     connection = None
