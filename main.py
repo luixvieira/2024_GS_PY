@@ -39,17 +39,17 @@ def menu_gerenciamento_usuarios():
         opcao = input("Escolha uma opção: ")
         
         if opcao == "1":
-            inserir_usuario()
+            funcoes.inserir_usuario()
         elif opcao == "2":
-            consultar_usuarios()
+            funcoes.consultar_usuarios()
         elif opcao == "3":
-            atualizar_usuario()
+            funcoes.atualizar_usuario()
         elif opcao == "4":
-            excluir_usuario()
+            funcoes.excluir_usuario()
         elif opcao == "5":
-            inserir_veiculo()
+            funcoes.inserir_veiculo()
         elif opcao == "6":
-            inserir_gas()
+            funcoes.inserir_gas()
         elif opcao == "7":
             break
         else:
@@ -68,15 +68,15 @@ def menu_gerenciamento_residencias():
         opcao = input("Escolha uma opção: ")
         
         if opcao == "1":
-            inserir_residencia()
+            funcoes.inserir_residencia()
         elif opcao == "2":
-            consultar_residencia()
+            funcoes.consultar_residencia()
         elif opcao == "3":
-            atualizar_residencia()
+            funcoes.atualizar_residencia()
         elif opcao == "4":
-            excluir_residencia()
+            funcoes.excluir_residencia()
         elif opcao == "5":
-            inserir_tarifa_energia()
+            funcoes.inserir_tarifa_energia()
         elif opcao == "6":
             break
         else:
@@ -95,15 +95,15 @@ def menu_gerenciamento_eletrodomesticos():
         opcao = input("Escolha uma opção: ")
         
         if opcao == "1":
-            inserir_tipo_eletrodomestico()
+            funcoes.inserir_tipo_eletrodomestico()
         elif opcao == "2":
-            associar_eletrodomestico_residencia()
+            funcoes.associar_eletrodomestico_residencia()
         elif opcao == "3":
-            consultar_eletrodomesticos()
+            funcoes.consultar_eletrodomesticos()
         elif opcao == "4":
-            atualizar_eletrodomestico()
+            funcoes.atualizar_eletrodomestico()
         elif opcao == "5":
-            excluir_eletrodomestico()
+            funcoes.excluir_eletrodomestico()
         elif opcao == "6":
             break
         else:
@@ -120,11 +120,11 @@ def menu_exportar_relatorios():
         opcao = input("Escolha uma opção: ")
         
         if opcao == "1":
-            gerar_relatorio_usuario()
+            funcoes.gerar_relatorio_usuario()
         elif opcao == "2":
-            gerar_relatorio_residencias()
+            funcoes.gerar_relatorio_residencias()
         elif opcao == "3":
-            gerar_relatorio_eletrodomesticos()
+            funcoes.gerar_relatorio_eletrodomesticos()
         elif opcao == "4":
             break
         else:
