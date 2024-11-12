@@ -152,14 +152,82 @@ def consultar_usuarios():
 def atualizar_usuario():
     try:
         connection = conectar()
-        cursor = connection.cursor()
-        
-        usuario_id = int(input("Digite o ID do usuário a ser atualizado: "))
-        novo_email = input("Digite o novo email do usuário: ")
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
 
-        cursor.execute("UPDATE TB_EL_USUARIO SET email = :1 WHERE id_usuario = :2", (novo_email, usuario_id))
+        cursor = connection.cursor()
+
+        # Opções para escolher o critério de busca
+        print("\nEscolha uma opção para encontrar o usuário que deseja atualizar:")
+        print("1. Atualizar por ID")
+        print("2. Atualizar por Nome")
+        print("3. Atualizar por Email")
+        opcao = input("Escolha uma opção (1-3): ").strip()
+
+        # Variáveis para consulta SQL e parâmetros
+        consulta = ""
+        parametros = {}
+
+        # Escolha da opção de busca
+        if opcao == "1":
+            # Busca por ID
+            while True:
+                try:
+                    usuario_id = int(input("Digite o ID do usuário: ").strip())
+                    consulta = "SELECT * FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario"
+                    parametros = {'id_usuario': usuario_id}
+                    cursor.execute(consulta, parametros)
+                    break
+                except ValueError:
+                    print("Erro: O ID deve ser um número. Tente novamente.")
+
+        elif opcao == "2":
+            # Busca por Nome
+            nome = input("Digite o nome do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE nome LIKE :nome"
+            parametros = {'nome': f'%{nome}%'}
+            cursor.execute(consulta, parametros)
+
+        elif opcao == "3":
+            # Busca por Email
+            email = input("Digite o email do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE email = :email"
+            parametros = {'email': email}
+            cursor.execute(consulta, parametros)
+
+        else:
+            print("Opção inválida. Tente novamente.")
+            return
+
+        # Valida se algum usuário foi encontrado
+        usuario = cursor.fetchone()
+        if not usuario:
+            print("Nenhum usuário encontrado com os critérios fornecidos.")
+            return
+
+        print(f"\nUsuário encontrado: {usuario}")
+
+        # Solicita novo email com validação de formato
+        email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        while True:
+            novo_email = input("Digite o novo email do usuário: ").strip()
+            if re.match(email_regex, novo_email):
+                break
+            else:
+                print("Erro: O email inserido é inválido. Tente novamente com um email válido.")
+
+        # Executa a atualização
+        if opcao == "1":
+            cursor.execute("UPDATE TB_EL_USUARIO SET email = :1 WHERE id_usuario = :2", (novo_email, usuario_id))
+        elif opcao == "2":
+            cursor.execute("UPDATE TB_EL_USUARIO SET email = :1 WHERE nome LIKE :2", (novo_email, f'%{nome}%'))
+        elif opcao == "3":
+            cursor.execute("UPDATE TB_EL_USUARIO SET email = :1 WHERE email = :2", (novo_email, email))
+        
         connection.commit()
         print("Usuário atualizado com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao atualizar usuário:", e)
     finally:
@@ -167,6 +235,7 @@ def atualizar_usuario():
             cursor.close()
         if connection:
             connection.close()
+
 
 def excluir_usuario():
     try:
