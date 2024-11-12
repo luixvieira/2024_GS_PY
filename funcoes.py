@@ -795,8 +795,16 @@ def atualizar_eletrodomestico():
 
         cursor = connection.cursor()
         
-        # Solicita o ID do eletrodoméstico a ser atualizado
-        id_eletro = int(input("Digite o ID do eletrodoméstico a ser atualizado: "))
+        # Solicita e valida o ID do eletrodoméstico
+        while True:
+            try:
+                id_eletro = int(input("Digite o ID do eletrodoméstico a ser atualizado: ").strip())
+                if id_eletro > 0:
+                    break
+                else:
+                    print("Erro: O ID deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID deve ser um número.")
 
         # Verifica se o eletrodoméstico existe
         cursor.execute("SELECT id_eletro FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
@@ -804,13 +812,45 @@ def atualizar_eletrodomestico():
             print("Eletrodoméstico não encontrado.")
             return
 
-        # Solicita os novos valores
-        nome = input("Digite o novo nome do eletrodoméstico: ")
-        potencia = float(input("Digite a nova potência em watts (W): "))
-        emissao_co2_por_hora = float(input("Digite a nova emissão de CO2 por hora em gramas: "))
-        marca = input("Digite a nova marca do eletrodoméstico: ")
+        # Validação do nome do eletrodoméstico
+        while True:
+            nome = input("Digite o novo nome do eletrodoméstico: ").strip()
+            if nome:
+                break
+            else:
+                print("Erro: O nome do eletrodoméstico não pode estar vazio.")
 
-        # Atualiza os dados
+        # Validação da potência
+        while True:
+            try:
+                potencia = float(input("Digite a nova potência em watts (W): ").strip())
+                if potencia > 0:
+                    break
+                else:
+                    print("Erro: A potência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. Digite um número para a potência.")
+
+        # Validação da emissão de CO2 por hora
+        while True:
+            try:
+                emissao_co2_por_hora = float(input("Digite a nova emissão de CO2 por hora em gramas: ").strip())
+                if emissao_co2_por_hora >= 0:
+                    break
+                else:
+                    print("Erro: A emissão de CO2 deve ser um número não negativo.")
+            except ValueError:
+                print("Erro: Entrada inválida. Digite um número para a emissão de CO2.")
+
+        # Validação da marca do eletrodoméstico
+        while True:
+            marca = input("Digite a nova marca do eletrodoméstico: ").strip()
+            if marca:
+                break
+            else:
+                print("Erro: A marca do eletrodoméstico não pode estar vazia.")
+
+        # Atualiza os dados do eletrodoméstico
         cursor.execute("""
             UPDATE TB_EL_ELETRODOMESTICO
             SET nome = :nome,
@@ -822,13 +862,17 @@ def atualizar_eletrodomestico():
 
         connection.commit()
         print("Eletrodoméstico atualizado com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao atualizar eletrodoméstico:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def excluir_eletrodomestico():
     try:
