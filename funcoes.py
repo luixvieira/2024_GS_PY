@@ -936,24 +936,71 @@ def inserir_veiculo():
 
         cursor = connection.cursor()
 
-        id_usuario = int(input("Digite o ID do usuário proprietário do veículo: "))
-        tipo_veiculo = input("Digite o tipo de veículo (Carro, Moto, Caminhonete, Bicicleta Elétrica): ")
-        km_mensal = float(input("Digite a quilometragem mensal percorrida: "))
-        emissao_co2_por_km = float(input("Digite a emissão de CO2 por km em gramas: "))
+        # Solicita e valida o ID do usuário
+        while True:
+            try:
+                id_usuario = int(input("Digite o ID do usuário proprietário do veículo: ").strip())
+                if id_usuario > 0:
+                    # Verifica se o usuário existe no banco de dados
+                    cursor.execute("SELECT id_usuario FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario", {'id_usuario': id_usuario})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Erro: Usuário não encontrado. Por favor, insira um ID de usuário válido.")
+                else:
+                    print("Erro: O ID do usuário deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID deve ser um número.")
 
+        # Validação do tipo de veículo
+        tipos_validos = ["Carro", "Moto", "Caminhonete", "Bicicleta Elétrica"]
+        while True:
+            tipo_veiculo = input("Digite o tipo de veículo (Carro, Moto, Caminhonete, Bicicleta Elétrica): ").strip()
+            if tipo_veiculo in tipos_validos:
+                break
+            else:
+                print(f"Erro: Tipo de veículo inválido. Escolha entre: {', '.join(tipos_validos)}")
+
+        # Validação da quilometragem mensal
+        while True:
+            try:
+                km_mensal = float(input("Digite a quilometragem mensal percorrida: ").strip())
+                if km_mensal > 0:
+                    break
+                else:
+                    print("Erro: A quilometragem mensal deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A quilometragem deve ser um número.")
+
+        # Validação da emissão de CO2 por km
+        while True:
+            try:
+                emissao_co2_por_km = float(input("Digite a emissão de CO2 por km em gramas: ").strip())
+                if emissao_co2_por_km >= 0:
+                    break
+                else:
+                    print("Erro: A emissão de CO2 deve ser um número não negativo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A emissão de CO2 deve ser um número.")
+
+        # Inserção do veículo no banco de dados
         cursor.execute("""
             INSERT INTO TB_EL_VEICULOS (id_usuario, tipo_veiculo, km_mensal, emissao_co2_por_km)
             VALUES (:1, :2, :3, :4)
         """, (id_usuario, tipo_veiculo, km_mensal, emissao_co2_por_km))
         connection.commit()
         print("Veículo inserido com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao inserir veículo:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def inserir_gas():
     connection = None
