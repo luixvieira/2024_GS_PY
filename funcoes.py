@@ -883,26 +883,46 @@ def excluir_eletrodomestico():
 
         cursor = connection.cursor()
         
-        # Solicita o ID do eletrodoméstico a ser excluído
-        id_eletro = int(input("Digite o ID do eletrodoméstico a ser excluído: "))
+        # Solicita e valida o ID do eletrodoméstico a ser excluído
+        while True:
+            try:
+                id_eletro = int(input("Digite o ID do eletrodoméstico a ser excluído: ").strip())
+                if id_eletro > 0:
+                    break
+                else:
+                    print("Erro: O ID deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID deve ser um número.")
 
         # Verifica se o eletrodoméstico existe
-        cursor.execute("SELECT id_eletro FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
-        if not cursor.fetchone():
+        cursor.execute("SELECT id_eletro, nome FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
+        resultado = cursor.fetchone()
+        if not resultado:
             print("Eletrodoméstico não encontrado.")
+            return
+
+        # Exibe informações do eletrodoméstico e solicita confirmação
+        print(f"Eletrodoméstico encontrado: ID {resultado[0]}, Nome: {resultado[1]}")
+        confirmacao = input("Tem certeza de que deseja excluir este eletrodoméstico? (s/n): ").strip().lower()
+        if confirmacao != 's':
+            print("Exclusão cancelada pelo usuário.")
             return
 
         # Exclui o eletrodoméstico
         cursor.execute("DELETE FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
         connection.commit()
         print("Eletrodoméstico excluído com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao excluir eletrodoméstico:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 
 def inserir_veiculo():
