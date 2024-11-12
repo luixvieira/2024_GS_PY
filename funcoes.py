@@ -1245,17 +1245,37 @@ def consultar_residencia():
 
         cursor = connection.cursor()
         
-        # Solicita o ID do usuário para consulta das residências
-        opcao_usuario = input("Deseja consultar residências de um usuário específico? (s/n): ").strip().lower()
+        # Solicita se deseja consultar residências de um usuário específico
+        while True:
+            opcao_usuario = input("Deseja consultar residências de um usuário específico? (s/n): ").strip().lower()
+            if opcao_usuario in ['s', 'n']:
+                break
+            else:
+                print("Opção inválida. Por favor, digite 's' para sim ou 'n' para não.")
+
+        # Consulta para um usuário específico ou para todos
         if opcao_usuario == 's':
-            id_usuario = int(input("Digite o ID do usuário: "))
-            consulta = """
-                SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao, t.preco_kwh
-                FROM TB_EL_RESIDENCIA r
-                LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
-                WHERE r.id_usuario = :id_usuario
-            """
-            cursor.execute(consulta, {'id_usuario': id_usuario})
+            while True:
+                try:
+                    id_usuario = int(input("Digite o ID do usuário: ").strip())
+                    if id_usuario > 0:
+                        # Verifica se o usuário existe
+                        cursor.execute("SELECT id_usuario FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario", {'id_usuario': id_usuario})
+                        if cursor.fetchone():
+                            consulta = """
+                                SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao, t.preco_kwh
+                                FROM TB_EL_RESIDENCIA r
+                                LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+                                WHERE r.id_usuario = :id_usuario
+                            """
+                            cursor.execute(consulta, {'id_usuario': id_usuario})
+                            break
+                        else:
+                            print("Usuário não encontrado. Insira um ID de usuário válido.")
+                    else:
+                        print("Erro: O ID do usuário deve ser um número positivo.")
+                except ValueError:
+                    print("Erro: Entrada inválida. O ID deve ser um número.")
         else:
             consulta = """
                 SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao, t.preco_kwh
@@ -1264,19 +1284,39 @@ def consultar_residencia():
             """
             cursor.execute(consulta)
 
+        # Coleta e exibe as residências encontradas
         residencias = cursor.fetchall()
         if residencias:
             for res in residencias:
                 print(f"ID Residência: {res[0]}, Número de Moradores: {res[1]}, Metragem: {res[2]}, Região Tarifa: {res[3]}, Preço kWh: {res[4]}")
+            
+            # Pergunta sobre exportação dos dados
+            while True:
+                exportar = input("Deseja exportar os resultados? (1 para JSON, 2 para Excel, 0 para não exportar): ").strip()
+                if exportar == '1':
+                    exportar_json(["ID Residência", "Número de Moradores", "Metragem", "Região Tarifa", "Preço kWh"], residencias, "residencias.json")
+                    break
+                elif exportar == '2':
+                    exportar_excel(["ID Residência", "Número de Moradores", "Metragem", "Região Tarifa", "Preço kWh"], residencias, "residencias.xlsx")
+                    break
+                elif exportar == '0':
+                    print("Exportação cancelada.")
+                    break
+                else:
+                    print("Opção inválida. Escolha 1 para JSON, 2 para Excel ou 0 para não exportar.")
         else:
             print("Nenhuma residência encontrada.")
+
     except oracledb.DatabaseError as e:
         print("Erro ao consultar residências:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def atualizar_residencia():
     try:
