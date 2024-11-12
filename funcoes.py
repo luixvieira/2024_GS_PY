@@ -1327,21 +1327,61 @@ def atualizar_residencia():
 
         cursor = connection.cursor()
         
-        # Solicita o ID da residência a ser atualizada
-        id_residencia = int(input("Digite o ID da residência a ser atualizada: "))
+        # Solicita e valida o ID da residência a ser atualizada
+        while True:
+            try:
+                id_residencia = int(input("Digite o ID da residência a ser atualizada: ").strip())
+                if id_residencia > 0:
+                    # Verifica se a residência existe no banco de dados
+                    cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Residência não encontrada. Por favor, insira um ID de residência válido.")
+                else:
+                    print("Erro: O ID da residência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID deve ser um número.")
 
-        # Verifica se a residência existe
-        cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
-        if not cursor.fetchone():
-            print("Residência não encontrada.")
-            return
+        # Solicita e valida o número de moradores
+        while True:
+            try:
+                numero_moradores = int(input("Digite o novo número de moradores: ").strip())
+                if numero_moradores > 0:
+                    break
+                else:
+                    print("Erro: O número de moradores deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O número de moradores deve ser um número inteiro.")
 
-        # Solicita os novos valores
-        numero_moradores = int(input("Digite o novo número de moradores: "))
-        metragem = float(input("Digite a nova metragem: "))
-        id_tarifa = int(input("Digite o novo ID da tarifa de energia: "))
+        # Solicita e valida a metragem da residência
+        while True:
+            try:
+                metragem = float(input("Digite a nova metragem: ").strip())
+                if metragem > 0:
+                    break
+                else:
+                    print("Erro: A metragem deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. A metragem deve ser um número.")
 
-        # Atualiza os dados
+        # Solicita e valida o ID da tarifa de energia
+        while True:
+            try:
+                id_tarifa = int(input("Digite o novo ID da tarifa de energia: ").strip())
+                if id_tarifa > 0:
+                    # Verifica se a tarifa de energia existe no banco de dados
+                    cursor.execute("SELECT id_tarifa FROM TB_EL_TARIFA_ENERGIA WHERE id_tarifa = :id_tarifa", {'id_tarifa': id_tarifa})
+                    if cursor.fetchone():
+                        break
+                    else:
+                        print("Tarifa de energia não encontrada. Por favor, insira um ID de tarifa válido.")
+                else:
+                    print("Erro: O ID da tarifa deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O ID da tarifa deve ser um número.")
+
+        # Atualiza os dados da residência
         cursor.execute("""
             UPDATE TB_EL_RESIDENCIA
             SET numero_moradores = :numero_moradores,
@@ -1352,13 +1392,17 @@ def atualizar_residencia():
 
         connection.commit()
         print("Residência atualizada com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao atualizar residência:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def excluir_residencia():
     try:
