@@ -3,6 +3,7 @@ import json
 import pandas as pd
 from datetime import datetime
 
+
 with open(r'credenciais_banco\credenciais_banco.json', 'r') as credenciais_banco:
     credenciais = json.load(credenciais_banco)
     
@@ -253,22 +254,175 @@ def gerar_relatorio_usuario():
         if connection:
             connection.close()
 
+def gerar_relatorio_residencias():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+
+        # Pergunta se deseja consultar as residências de um usuário específico
+        opcao_usuario = input("Deseja consultar residências de um usuário específico? (s/n): ").strip().lower()
+        if opcao_usuario == 's':
+            id_usuario = int(input("Digite o ID do usuário: "))
+            consulta = """
+                SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao AS regiao_tarifa, t.preco_kwh
+                FROM TB_EL_RESIDENCIA r
+                LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+                WHERE r.id_usuario = :id_usuario
+            """
+            cursor.execute(consulta, {'id_usuario': id_usuario})
+        else:
+            # Pergunta se deseja consultar uma residência específica
+            opcao_residencia = input("Deseja consultar uma residência específica? (s/n): ").strip().lower()
+            if opcao_residencia == 's':
+                id_residencia = int(input("Digite o ID da residência: "))
+                consulta = """
+                    SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao AS regiao_tarifa, t.preco_kwh
+                    FROM TB_EL_RESIDENCIA r
+                    LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+                    WHERE r.id_residencia = :id_residencia
+                """
+                cursor.execute(consulta, {'id_residencia': id_residencia})
+            else:
+                consulta = """
+                    SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao AS regiao_tarifa, t.preco_kwh
+                    FROM TB_EL_RESIDENCIA r
+                    LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+                """
+                cursor.execute(consulta)
+
+        residencias = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]
+
+        # Exportação dos resultados
+        if residencias:
+            while True:
+                formato = input("Escolha o formato de exportação (1 para JSON, 2 para Excel): ")
+                if formato == "1":
+                    exportar_json((columns, residencias), "relatorio_residencias.json")
+                    break
+                elif formato == "2":
+                    exportar_excel((columns, residencias), "relatorio_residencias.xlsx")
+                    break
+                else:
+                    print("Opção inválida. Por favor, escolha 1 para JSON ou 2 para Excel.")
+        else:
+            print("Nenhuma residência encontrada.")
+    except oracledb.DatabaseError as e:
+        print("Erro ao gerar relatório de residências:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+def gerar_relatorio_eletrodomesticos():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+
+        # Pergunta se deseja consultar os eletrodomésticos de uma residência específica
+        opcao_residencia = input("Deseja consultar eletrodomésticos de uma residência específica? (s/n): ").strip().lower()
+        if opcao_residencia == 's':
+            id_residencia = int(input("Digite o ID da residência: "))
+            consulta = """
+                SELECT e.id_eletro, e.nome, e.potencia, e.emissao_co2_por_hora, e.marca, ue.horas_uso_diario
+                FROM TB_EL_ELETRODOMESTICO e
+                JOIN TB_EL_USO_ELETRODOMESTICO ue ON e.id_eletro = ue.id_eletro
+                WHERE ue.id_residencia = :id_residencia
+            """
+            cursor.execute(consulta, {'id_residencia': id_residencia})
+        else:
+            # Pergunta se deseja consultar um eletrodoméstico específico
+            opcao_eletro = input("Deseja consultar um eletrodoméstico específico? (s/n): ").strip().lower()
+            if opcao_eletro == 's':
+                id_eletro = int(input("Digite o ID do eletrodoméstico: "))
+                consulta = """
+                    SELECT e.id_eletro, e.nome, e.potencia, e.emissao_co2_por_hora, e.marca
+                    FROM TB_EL_ELETRODOMESTICO e
+                    WHERE e.id_eletro = :id_eletro
+                """
+                cursor.execute(consulta, {'id_eletro': id_eletro})
+            else:
+                consulta = """
+                    SELECT e.id_eletro, e.nome, e.potencia, e.emissao_co2_por_hora, e.marca
+                    FROM TB_EL_ELETRODOMESTICO e
+                """
+                cursor.execute(consulta)
+
+        eletrodomesticos = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]
+
+        # Exportação dos resultados
+        if eletrodomesticos:
+            while True:
+                formato = input("Escolha o formato de exportação (1 para JSON, 2 para Excel): ")
+                if formato == "1":
+                    exportar_json((columns, eletrodomesticos), "relatorio_eletrodomesticos.json")
+                    break
+                elif formato == "2":
+                    exportar_excel((columns, eletrodomesticos), "relatorio_eletrodomesticos.xlsx")
+                    break
+                else:
+                    print("Opção inválida. Por favor, escolha 1 para JSON ou 2 para Excel.")
+        else:
+            print("Nenhum eletrodoméstico encontrado.")
+    except oracledb.DatabaseError as e:
+        print("Erro ao gerar relatório de eletrodomésticos:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
 # Função para exportar dados em formato JSON
 def exportar_json(data, filename):
+    # Função para exportar dados em JSON, adaptada para diferentes tipos de dados
+    def converter(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        raise TypeError(f"Tipo {type(obj)} não serializável")
+    
     with open(filename, "w", encoding="utf-8") as json_file:
-        json.dump(data, json_file, indent=4, ensure_ascii=False, default=str)
+        # Verifica se `data` é uma lista de registros ou um dicionário completo
+        if isinstance(data, list):
+            json.dump([dict(zip(data[0], row)) for row in data[1]], json_file, indent=4, ensure_ascii=False, default=converter)
+        else:
+            json.dump(data, json_file, indent=4, ensure_ascii=False, default=converter)
     print(f"Dados exportados para {filename} com sucesso!")
 
-# Função para exportar dados em formato Excel
 def exportar_excel(data, filename):
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-        # Dados do Usuário
-        df_usuario = pd.DataFrame([data['Usuario']])
-        df_usuario.to_excel(writer, sheet_name='Usuario', index=False)
+    # Função para exportar dados em Excel, adaptada para diferentes tipos de dados
+    if isinstance(data, dict):
+        # Exportação para relatórios completos (exemplo: dados de usuário com residências e eletrodomésticos)
+        with pd.ExcelWriter(filename) as writer:
+            if 'Usuario' in data:
+                df_usuario = pd.DataFrame([data['Usuario']])
+                df_usuario.to_excel(writer, sheet_name='Usuario', index=False)
+            if 'Residencias' in data:
+                df_residencias = pd.DataFrame(data['Residencias'])
+                df_residencias.to_excel(writer, sheet_name='Residencias', index=False)
+            if 'Eletrodomesticos' in data:
+                df_eletrodomesticos = pd.DataFrame(data['Eletrodomesticos'])
+                df_eletrodomesticos.to_excel(writer, sheet_name='Eletrodomesticos', index=False)
+    else:
+        # Exportação de listas de registros (exemplo: resultado de consultas de residências ou eletrodomésticos)
+        columns, rows = data
+        df = pd.DataFrame(rows, columns=columns)
+        df.to_excel(filename, index=False)
 
-        # Dados das Residências
-        df_residencias = pd.DataFrame(data['Residencias'])
-        df_residencias.to_excel(writer, sheet_name='Residencias', index=False)
+    print(f"Dados exportados para {filename} com sucesso!")
+
+
 
 
 def inserir_tipo_eletrodomestico():
@@ -305,6 +459,123 @@ def inserir_tipo_eletrodomestico():
             print("Novo tipo de eletrodoméstico inserido com sucesso!")
     except oracledb.DatabaseError as e:
         print("Erro ao inserir tipo de eletrodoméstico:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def consultar_eletrodomesticos():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Pergunta se deseja consultar eletrodomésticos de uma residência específica
+        opcao_residencia = input("Deseja consultar eletrodomésticos de uma residência específica? (s/n): ").strip().lower()
+        if opcao_residencia == 's':
+            id_residencia = int(input("Digite o ID da residência: "))
+            consulta = """
+                SELECT e.id_eletro, e.nome, e.potencia, e.emissao_co2_por_hora, e.marca, ue.horas_uso_diario
+                FROM TB_EL_ELETRODOMESTICO e
+                JOIN TB_EL_USO_ELETRODOMESTICO ue ON e.id_eletro = ue.id_eletro
+                WHERE ue.id_residencia = :id_residencia
+            """
+            cursor.execute(consulta, {'id_residencia': id_residencia})
+        else:
+            consulta = """
+                SELECT id_eletro, nome, potencia, emissao_co2_por_hora, marca
+                FROM TB_EL_ELETRODOMESTICO
+            """
+            cursor.execute(consulta)
+
+        eletrodomesticos = cursor.fetchall()
+        if eletrodomesticos:
+            for eletro in eletrodomesticos:
+                print(f"ID Eletrodoméstico: {eletro[0]}, Nome: {eletro[1]}, Potência: {eletro[2]}W, Emissão CO2 por Hora: {eletro[3]}g, Marca: {eletro[4]}")
+                if len(eletro) > 5:
+                    print(f"Horas de Uso Diário: {eletro[5]}")
+        else:
+            print("Nenhum eletrodoméstico encontrado.")
+    except oracledb.DatabaseError as e:
+        print("Erro ao consultar eletrodomésticos:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def atualizar_eletrodomestico():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Solicita o ID do eletrodoméstico a ser atualizado
+        id_eletro = int(input("Digite o ID do eletrodoméstico a ser atualizado: "))
+
+        # Verifica se o eletrodoméstico existe
+        cursor.execute("SELECT id_eletro FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
+        if not cursor.fetchone():
+            print("Eletrodoméstico não encontrado.")
+            return
+
+        # Solicita os novos valores
+        nome = input("Digite o novo nome do eletrodoméstico: ")
+        potencia = float(input("Digite a nova potência em watts (W): "))
+        emissao_co2_por_hora = float(input("Digite a nova emissão de CO2 por hora em gramas: "))
+        marca = input("Digite a nova marca do eletrodoméstico: ")
+
+        # Atualiza os dados
+        cursor.execute("""
+            UPDATE TB_EL_ELETRODOMESTICO
+            SET nome = :nome,
+                potencia = :potencia,
+                emissao_co2_por_hora = :emissao_co2_por_hora,
+                marca = :marca
+            WHERE id_eletro = :id_eletro
+        """, {'nome': nome, 'potencia': potencia, 'emissao_co2_por_hora': emissao_co2_por_hora, 'marca': marca, 'id_eletro': id_eletro})
+
+        connection.commit()
+        print("Eletrodoméstico atualizado com sucesso!")
+    except oracledb.DatabaseError as e:
+        print("Erro ao atualizar eletrodoméstico:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def excluir_eletrodomestico():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Solicita o ID do eletrodoméstico a ser excluído
+        id_eletro = int(input("Digite o ID do eletrodoméstico a ser excluído: "))
+
+        # Verifica se o eletrodoméstico existe
+        cursor.execute("SELECT id_eletro FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
+        if not cursor.fetchone():
+            print("Eletrodoméstico não encontrado.")
+            return
+
+        # Exclui o eletrodoméstico
+        cursor.execute("DELETE FROM TB_EL_ELETRODOMESTICO WHERE id_eletro = :id_eletro", {'id_eletro': id_eletro})
+        connection.commit()
+        print("Eletrodoméstico excluído com sucesso!")
+    except oracledb.DatabaseError as e:
+        print("Erro ao excluir eletrodoméstico:", e)
     finally:
         if cursor:
             cursor.close()
@@ -457,6 +728,121 @@ def inserir_residencia():
         if connection:
             connection.close()
 
+def consultar_residencia():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Solicita o ID do usuário para consulta das residências
+        opcao_usuario = input("Deseja consultar residências de um usuário específico? (s/n): ").strip().lower()
+        if opcao_usuario == 's':
+            id_usuario = int(input("Digite o ID do usuário: "))
+            consulta = """
+                SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao, t.preco_kwh
+                FROM TB_EL_RESIDENCIA r
+                LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+                WHERE r.id_usuario = :id_usuario
+            """
+            cursor.execute(consulta, {'id_usuario': id_usuario})
+        else:
+            consulta = """
+                SELECT r.id_residencia, r.numero_moradores, r.metragem, t.regiao, t.preco_kwh
+                FROM TB_EL_RESIDENCIA r
+                LEFT JOIN TB_EL_TARIFA_ENERGIA t ON r.id_tarifa = t.id_tarifa
+            """
+            cursor.execute(consulta)
+
+        residencias = cursor.fetchall()
+        if residencias:
+            for res in residencias:
+                print(f"ID Residência: {res[0]}, Número de Moradores: {res[1]}, Metragem: {res[2]}, Região Tarifa: {res[3]}, Preço kWh: {res[4]}")
+        else:
+            print("Nenhuma residência encontrada.")
+    except oracledb.DatabaseError as e:
+        print("Erro ao consultar residências:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def atualizar_residencia():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Solicita o ID da residência a ser atualizada
+        id_residencia = int(input("Digite o ID da residência a ser atualizada: "))
+
+        # Verifica se a residência existe
+        cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+        if not cursor.fetchone():
+            print("Residência não encontrada.")
+            return
+
+        # Solicita os novos valores
+        numero_moradores = int(input("Digite o novo número de moradores: "))
+        metragem = float(input("Digite a nova metragem: "))
+        id_tarifa = int(input("Digite o novo ID da tarifa de energia: "))
+
+        # Atualiza os dados
+        cursor.execute("""
+            UPDATE TB_EL_RESIDENCIA
+            SET numero_moradores = :numero_moradores,
+                metragem = :metragem,
+                id_tarifa = :id_tarifa
+            WHERE id_residencia = :id_residencia
+        """, {'numero_moradores': numero_moradores, 'metragem': metragem, 'id_tarifa': id_tarifa, 'id_residencia': id_residencia})
+
+        connection.commit()
+        print("Residência atualizada com sucesso!")
+    except oracledb.DatabaseError as e:
+        print("Erro ao atualizar residência:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+def excluir_residencia():
+    try:
+        connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
+        cursor = connection.cursor()
+        
+        # Solicita o ID da residência a ser excluída
+        id_residencia = int(input("Digite o ID da residência a ser excluída: "))
+
+        # Verifica se a residência existe
+        cursor.execute("SELECT id_residencia FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+        if not cursor.fetchone():
+            print("Residência não encontrada.")
+            return
+
+        # Exclui a residência
+        cursor.execute("DELETE FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+        connection.commit()
+        print("Residência excluída com sucesso!")
+    except oracledb.DatabaseError as e:
+        print("Erro ao excluir residência:", e)
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
 def inserir_tarifa_energia():
     connection = None
     cursor = None
@@ -501,25 +887,44 @@ def inserir_tarifa_energia():
             connection.close()
 
 
-# Menu do Sistema
-def menu():
+def menu_principal():
     while True:
-        print("\nMenu do Sistema")
+        print("\nMenu Principal")
+        print("1. Gerenciamento de Usuários")
+        print("2. Gerenciamento de Residências")
+        print("3. Gerenciamento de Eletrodomésticos")
+        print("4. Exportar Relatórios")
+        print("5. Sair do Programa")
+        
+        opcao = input("Escolha uma opção: ")
+        
+        if opcao == "1":
+            menu_gerenciamento_usuarios()
+        elif opcao == "2":
+            menu_gerenciamento_residencias()
+        elif opcao == "3":
+            menu_gerenciamento_eletrodomesticos()
+        elif opcao == "4":
+            menu_exportar_relatorios()
+        elif opcao == "5":
+            print("Saindo do sistema.")
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+def menu_gerenciamento_usuarios():
+    while True:
+        print("\nGerenciamento de Usuários")
         print("1. Inserir Usuário")
         print("2. Consultar Usuários")
         print("3. Atualizar Usuário")
         print("4. Excluir Usuário")
-        print("5. Inserir Novo Tipo de Eletrodoméstico")
-        print("6. Associar Eletrodoméstico a Residência")
-        print("7. Inserir Veículo")
-        print("8. Inserir Registro de Consumo de Gás")
-        print("9. Gerar Relatório de Usuários")
-        print("10. Inserir Residência")
-        print("11. Inserir Tarifa de energia")
-        print("12. Sair")
-
+        print("5. Inserir veiculo")
+        print("6. Inserir gás")
+        print("7. Voltar ao Menu Principal")
+        
         opcao = input("Escolha uma opção: ")
-
+        
         if opcao == "1":
             inserir_usuario()
         elif opcao == "2":
@@ -529,24 +934,89 @@ def menu():
         elif opcao == "4":
             excluir_usuario()
         elif opcao == "5":
-            inserir_tipo_eletrodomestico()
-        elif opcao == "6":
-            associar_eletrodomestico_residencia()
-        elif opcao == "7":
             inserir_veiculo()
-        elif opcao == "8":
+        elif opcao == "6":
             inserir_gas()
-        elif opcao == "9":
-            gerar_relatorio_usuario()
-        elif opcao == "10":
-            inserir_residencia()
-        elif opcao == "11":
-            inserir_tarifa_energia()
-        elif opcao == "12":
-            print("Saindo do sistema.")
+        elif opcao == "7":
             break
         else:
             print("Opção inválida. Tente novamente.")
-# Executar o Menu
+
+def menu_gerenciamento_residencias():
+    while True:
+        print("\nGerenciamento de Residências")
+        print("1. Inserir Residência")
+        print("2. Consultar Residências")
+        print("3. Atualizar Residência")
+        print("4. Excluir Residência")
+        print("5. Inserir Tarifa de energia")
+        print("6. Voltar ao Menu Principal")
+        
+        opcao = input("Escolha uma opção: ")
+        
+        if opcao == "1":
+            inserir_residencia()
+        elif opcao == "2":
+            consultar_residencia()
+        elif opcao == "3":
+            atualizar_residencia()
+        elif opcao == "4":
+            excluir_residencia()
+        elif opcao == "5":
+            inserir_tarifa_energia()
+        elif opcao == "6":
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+def menu_gerenciamento_eletrodomesticos():
+    while True:
+        print("\nGerenciamento de Eletrodomésticos")
+        print("1. Inserir Novo Tipo de Eletrodoméstico")
+        print("2. Associar Eletrodoméstico a Residência")
+        print("3. Consultar Eletrodomésticos")
+        print("4. Atualizar Eletrodoméstico")
+        print("5. Excluir Eletrodoméstico")
+        print("6. Voltar ao Menu Principal")
+        
+        opcao = input("Escolha uma opção: ")
+        
+        if opcao == "1":
+            inserir_tipo_eletrodomestico()
+        elif opcao == "2":
+            associar_eletrodomestico_residencia()
+        elif opcao == "3":
+            consultar_eletrodomesticos()
+        elif opcao == "4":
+            atualizar_eletrodomestico()
+        elif opcao == "5":
+            excluir_eletrodomestico()
+        elif opcao == "6":
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+def menu_exportar_relatorios():
+    while True:
+        print("\nExportar Relatórios")
+        print("1. Gerar Relatório de Usuários")
+        print("2. Gerar Relatório de Residências")
+        print("3. Gerar Relatório de Eletrodomésticos")
+        print("4. Voltar ao Menu Principal")
+        
+        opcao = input("Escolha uma opção: ")
+        
+        if opcao == "1":
+            gerar_relatorio_usuario()
+        elif opcao == "2":
+            gerar_relatorio_residencias()
+        elif opcao == "3":
+            gerar_relatorio_eletrodomesticos()
+        elif opcao == "4":
+            break
+        else:
+            print("Opção inválida. Tente novamente.")
+
+# Executar o Menu Principal
 if __name__ == "__main__":
-    menu()
+    menu_principal()
