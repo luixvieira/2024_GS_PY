@@ -2,6 +2,7 @@ import oracledb
 import json
 import pandas as pd
 from datetime import datetime
+import re
 
 
 with open(r'credenciais_banco\credenciais_banco.json', 'r') as credenciais_banco:
@@ -24,30 +25,55 @@ def conectar():
         return None
 
 # Funções CRUD
+
 def inserir_usuario():
     connection = None
     cursor = None
     try:
+        # Conectar ao banco de dados
         connection = conectar()
         if not connection:
             print("Não foi possível conectar ao banco de dados.")
             return  # Encerra a função se a conexão falhar
 
         cursor = connection.cursor()
-        
-        nome = input("Digite o nome do usuário: ")
-        email = input("Digite o email do usuário: ")
 
+        # Validação do nome com repetição até entrada válida
+        while True:
+            nome = input("Digite o nome do usuário: ").strip()
+            if nome:
+                break  # Sai do loop se o nome não estiver vazio
+            else:
+                print("Erro: O nome do usuário não pode estar vazio. Tente novamente.")
+
+        # Validação do email com repetição até entrada válida
+        email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        while True:
+            email = input("Digite o email do usuário: ").strip()
+            if re.match(email_regex, email):
+                break  # Sai do loop se o email estiver em formato válido
+            else:
+                print("Erro: O email inserido é inválido. Tente novamente com um email válido.")
+
+        # Tenta inserir o usuário no banco de dados
         cursor.execute("INSERT INTO TB_EL_USUARIO (nome, email) VALUES (:1, :2)", (nome, email))
         connection.commit()
         print("Usuário inserido com sucesso!")
+
+    except oracledb.IntegrityError:
+        # Trata duplicidade de email (supondo que haja uma restrição de unicidade para email)
+        print("Erro: O email fornecido já está registrado. Tente com um email diferente.")
     except oracledb.DatabaseError as e:
         print("Erro ao inserir usuário:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
+        # Fechar cursor e conexão, se abertos
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def consultar_usuarios():
     try:
