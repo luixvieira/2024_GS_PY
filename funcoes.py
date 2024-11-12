@@ -1430,18 +1430,23 @@ def excluir_residencia():
                 print("Erro: Entrada inválida. O ID da residência deve ser um número.")
 
         # Confirmação para exclusão
-        confirmacao = input(f"Tem certeza de que deseja excluir a residência com ID {id_residencia}? (s/n): ").strip().lower()
+        confirmacao = input(f"Tem certeza de que deseja excluir a residência com ID {id_residencia} e todos os registros associados? (s/n): ").strip().lower()
         if confirmacao != 's':
             print("Operação de exclusão cancelada.")
             return
 
-        # Exclui a residência
+        # Excluir registros dependentes manualmente antes de excluir a residência
+        cursor.execute("DELETE FROM TB_EL_USO_ELETRODOMESTICO WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+        cursor.execute("DELETE FROM TB_EL_GAS WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
+        # Adicione outras exclusões de tabelas dependentes, se necessário
+
+        # Exclui a residência após remover os registros dependentes
         cursor.execute("DELETE FROM TB_EL_RESIDENCIA WHERE id_residencia = :id_residencia", {'id_residencia': id_residencia})
         connection.commit()
-        print("Residência excluída com sucesso!")
+        print("Residência e todos os registros associados foram excluídos com sucesso!")
 
     except oracledb.DatabaseError as e:
-        print("Erro ao excluir residência:", e)
+        print("Erro ao excluir residência e registros associados:", e)
     except Exception as e:
         print("Erro inesperado:", e)
     finally:
@@ -1462,9 +1467,33 @@ def inserir_tarifa_energia():
 
         cursor = connection.cursor()
 
-        regiao = input("Digite a região da tarifa de energia: ")
-        preco_kwh = float(input("Digite o preço por kWh (em R$): "))
-        data_validade = input("Digite a data de validade da tarifa (YYYY-MM-DD) ou deixe em branco para indefinida: ")
+        # Validação da região
+        while True:
+            regiao = input("Digite a região da tarifa de energia: ").strip()
+            if regiao:
+                break
+            else:
+                print("Erro: A região não pode estar em branco.")
+
+        # Validação do preço por kWh
+        while True:
+            try:
+                preco_kwh = float(input("Digite o preço por kWh (em R$): ").strip())
+                if preco_kwh > 0:
+                    break
+                else:
+                    print("Erro: O preço por kWh deve ser um valor positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. O preço por kWh deve ser um número.")
+
+        # Validação da data de validade
+        data_validade = input("Digite a data de validade da tarifa (YYYY-MM-DD) ou deixe em branco para indefinida: ").strip()
+        if data_validade:
+            try:
+                datetime.strptime(data_validade, "%Y-%m-%d")  # Verifica o formato da data
+            except ValueError:
+                print("Erro: Data de validade inválida. Deve estar no formato YYYY-MM-DD.")
+                return
 
         # Verificar se a região já possui uma tarifa cadastrada
         cursor.execute("SELECT id_tarifa FROM TB_EL_TARIFA_ENERGIA WHERE regiao = :1", (regiao,))
@@ -1486,11 +1515,15 @@ def inserir_tarifa_energia():
 
         connection.commit()
         print("Tarifa de energia inserida com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao inserir tarifa de energia:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
