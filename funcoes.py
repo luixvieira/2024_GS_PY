@@ -731,9 +731,26 @@ def consultar_eletrodomesticos():
         cursor = connection.cursor()
         
         # Pergunta se deseja consultar eletrodomésticos de uma residência específica
-        opcao_residencia = input("Deseja consultar eletrodomésticos de uma residência específica? (s/n): ").strip().lower()
+        while True:
+            opcao_residencia = input("Deseja consultar eletrodomésticos de uma residência específica? (s/n): ").strip().lower()
+            if opcao_residencia in ['s', 'n']:
+                break
+            else:
+                print("Opção inválida. Por favor, digite 's' para sim ou 'n' para não.")
+
         if opcao_residencia == 's':
-            id_residencia = int(input("Digite o ID da residência: "))
+            # Validação do ID da residência
+            while True:
+                try:
+                    id_residencia = int(input("Digite o ID da residência: ").strip())
+                    if id_residencia > 0:
+                        break
+                    else:
+                        print("Erro: O ID da residência deve ser um número positivo.")
+                except ValueError:
+                    print("Erro: Entrada inválida. O ID da residência deve ser um número.")
+
+            # Consulta por residência específica
             consulta = """
                 SELECT e.id_eletro, e.nome, e.potencia, e.emissao_co2_por_hora, e.marca, ue.horas_uso_diario
                 FROM TB_EL_ELETRODOMESTICO e
@@ -742,12 +759,14 @@ def consultar_eletrodomesticos():
             """
             cursor.execute(consulta, {'id_residencia': id_residencia})
         else:
+            # Consulta todos os eletrodomésticos
             consulta = """
                 SELECT id_eletro, nome, potencia, emissao_co2_por_hora, marca
                 FROM TB_EL_ELETRODOMESTICO
             """
             cursor.execute(consulta)
 
+        # Exibe os eletrodomésticos encontrados
         eletrodomesticos = cursor.fetchall()
         if eletrodomesticos:
             for eletro in eletrodomesticos:
@@ -756,8 +775,11 @@ def consultar_eletrodomesticos():
                     print(f"Horas de Uso Diário: {eletro[5]}")
         else:
             print("Nenhum eletrodoméstico encontrado.")
+
     except oracledb.DatabaseError as e:
         print("Erro ao consultar eletrodomésticos:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
