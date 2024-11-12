@@ -78,11 +78,68 @@ def inserir_usuario():
 def consultar_usuarios():
     try:
         connection = conectar()
+        if not connection:
+            print("Não foi possível conectar ao banco de dados.")
+            return
+
         cursor = connection.cursor()
 
-        cursor.execute("SELECT * FROM TB_EL_USUARIO")
-        for row in cursor:
-            print(row)
+        # Menu para escolha da consulta
+        print("\nOpções de consulta:")
+        print("1. Consultar todos os usuários")
+        print("2. Consultar por ID")
+        print("3. Consultar por nome")
+        print("4. Consultar por email")
+        opcao = input("Escolha uma opção (1-4): ").strip()
+
+        # Variáveis para consulta SQL e parâmetros
+        consulta = ""
+        parametros = {}
+
+        # Realiza a consulta de acordo com a opção escolhida
+        if opcao == "1":
+            consulta = "SELECT * FROM TB_EL_USUARIO"
+            cursor.execute(consulta)
+
+        elif opcao == "2":
+            # Consulta por ID
+            while True:
+                try:
+                    usuario_id = int(input("Digite o ID do usuário: ").strip())
+                    consulta = "SELECT * FROM TB_EL_USUARIO WHERE id_usuario = :id_usuario"
+                    parametros = {'id_usuario': usuario_id}
+                    cursor.execute(consulta, parametros)
+                    break
+                except ValueError:
+                    print("Erro: O ID deve ser um número. Tente novamente.")
+
+        elif opcao == "3":
+            # Consulta por nome
+            nome = input("Digite o nome do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE nome LIKE :nome"
+            parametros = {'nome': f'%{nome}%'}
+            cursor.execute(consulta, parametros)
+
+        elif opcao == "4":
+            # Consulta por email
+            email = input("Digite o email do usuário: ").strip()
+            consulta = "SELECT * FROM TB_EL_USUARIO WHERE email = :email"
+            parametros = {'email': email}
+            cursor.execute(consulta, parametros)
+
+        else:
+            print("Opção inválida. Tente novamente.")
+            return
+
+        # Exibe os resultados da consulta
+        resultados = cursor.fetchall()
+        if resultados:
+            print("\nResultados da consulta:")
+            for row in resultados:
+                print(row)
+        else:
+            print("Nenhum usuário encontrado com os critérios fornecidos.")
+
     except oracledb.DatabaseError as e:
         print("Erro ao consultar usuários:", e)
     finally:
@@ -90,6 +147,7 @@ def consultar_usuarios():
             cursor.close()
         if connection:
             connection.close()
+
 
 def atualizar_usuario():
     try:
