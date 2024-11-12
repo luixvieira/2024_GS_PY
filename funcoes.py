@@ -654,10 +654,43 @@ def inserir_tipo_eletrodomestico():
 
         cursor = connection.cursor()
 
-        nome = input("Digite o nome do eletrodoméstico: ")
-        potencia = float(input("Digite a potência em watts (W): "))
-        emissao_co2_por_hora = float(input("Digite a emissão de CO2 por hora em gramas: "))
-        marca = input("Digite a marca do eletrodoméstico: ")
+        # Validação do nome
+        while True:
+            nome = input("Digite o nome do eletrodoméstico: ").strip()
+            if nome:
+                break
+            else:
+                print("Erro: O nome do eletrodoméstico não pode estar vazio.")
+
+        # Validação da potência
+        while True:
+            try:
+                potencia = float(input("Digite a potência em watts (W): ").strip())
+                if potencia > 0:
+                    break
+                else:
+                    print("Erro: A potência deve ser um número positivo.")
+            except ValueError:
+                print("Erro: Entrada inválida. Digite um número para a potência.")
+
+        # Validação da emissão de CO2 por hora
+        while True:
+            try:
+                emissao_co2_por_hora = float(input("Digite a emissão de CO2 por hora em gramas: ").strip())
+                if emissao_co2_por_hora >= 0:
+                    break
+                else:
+                    print("Erro: A emissão de CO2 deve ser um número não negativo.")
+            except ValueError:
+                print("Erro: Entrada inválida. Digite um número para a emissão de CO2.")
+
+        # Validação da marca
+        while True:
+            marca = input("Digite a marca do eletrodoméstico: ").strip()
+            if marca:
+                break
+            else:
+                print("Erro: A marca do eletrodoméstico não pode estar vazia.")
 
         # Verificar se o eletrodoméstico já existe
         cursor.execute("""
@@ -667,21 +700,26 @@ def inserir_tipo_eletrodomestico():
         resultado = cursor.fetchone()
 
         if resultado:
-            print("Eletrodoméstico já cadastrado.")
+            print("Erro: Eletrodoméstico já cadastrado.")
         else:
+            # Inserção do eletrodoméstico no banco
             cursor.execute("""
                 INSERT INTO TB_EL_ELETRODOMESTICO (nome, potencia, emissao_co2_por_hora, marca)
                 VALUES (:1, :2, :3, :4)
             """, (nome, potencia, emissao_co2_por_hora, marca))
             connection.commit()
             print("Novo tipo de eletrodoméstico inserido com sucesso!")
+
     except oracledb.DatabaseError as e:
         print("Erro ao inserir tipo de eletrodoméstico:", e)
+    except Exception as e:
+        print("Erro inesperado:", e)
     finally:
         if cursor:
             cursor.close()
         if connection:
             connection.close()
+
 
 def consultar_eletrodomesticos():
     try:
